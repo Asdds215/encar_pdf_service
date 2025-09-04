@@ -1,12 +1,22 @@
-FROM python:3.11-slim
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libnss3 libatk1.0-0 libatk-bridge2.0-0 libdrm2 libxkbcommon0 libgbm1 \
-    libasound2 libxcomposite1 libxdamage1 libxrandr2 libgtk-3-0 \
-    fonts-liberation libpango-1.0-0 libpangocairo-1.0-0 \
-    wget curl unzip && rm -rf /var/lib/apt/lists/*
+# استخدم صورة بلاي‌رايت الجاهزة (تشمل Chromium وكل التبعيات)
+FROM mcr.microsoft.com/playwright/python:v1.46.0-jammy
+
+# مكان العمل
 WORKDIR /app
+
+# نسخ المتطلبات أولاً (للاستفادة من طبقة cache)
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt && pip install --no-cache-dir playwright && playwright install --with-deps chromium
+
+# ثبّت باكج البايثون
+# ملاحظة: لا حاجة لأمر playwright install هنا لأن الصورة أساساً فيها المتصفحات
+RUN pip install --no-cache-dir --upgrade pip \
+ && pip install --no-cache-dir -r requirements.txt
+
+# نسخ بقية المشروع
 COPY . /app
+
+# المنفذ
 EXPOSE 8000
-CMD ["uvicorn","main_with_frontend:app","--host","0.0.0.0","--port","8000"]
+
+# شغّل FastAPI (النسخة مع الواجهة)
+CMD ["uvicorn", "main_with_frontend:app", "--host", "0.0.0.0", "--port", "8000"]
